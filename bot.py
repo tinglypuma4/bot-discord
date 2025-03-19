@@ -22,6 +22,8 @@ import sqlite3
 from PIL import Image, ImageDraw, ImageFont
 import matplotlib.pyplot as plt
 from io import BytesIO
+from flask import Flask
+import threading
 
 # ================ CONFIGURACIÓN DE LOGGING ================
 logging.basicConfig(
@@ -41,6 +43,17 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 STABILITY_API_KEY = os.getenv('STABILITY_API_KEY') or None
+PORT = int(os.getenv('PORT', 8080))  # Añadir definición de PORT aquí
+
+# Configuración de Flask
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot está en línea!"
+
+def run_web_server():
+    app.run(host='0.0.0.0', port=PORT)
 
 # ================ CONFIGURACIÓN DE LA BASE DE DATOS ================
 class Database:
@@ -1081,6 +1094,12 @@ async def on_error(event, *args, **kwargs):
 def main():
     try:
         logger.info("Iniciando bot...")
+        
+        # Iniciar servidor web en segundo plano
+        web_thread = threading.Thread(target=run_web_server)
+        web_thread.daemon = True  # Importante para que termine cuando el programa principal termine
+        web_thread.start()
+        
         bot.run(TOKEN)
     except Exception as e:
         logger.critical(f"Error fatal al iniciar el bot: {e}")
@@ -1088,6 +1107,3 @@ def main():
         # Cerrar conexiones y recursos
         db.close()
         logger.info("Bot finalizado, recursos liberados.")
-
-if __name__ == "__main__":
-    main()
