@@ -1066,5 +1066,35 @@ def main():
         db.close()
         logger.info("Bot finalizado, recursos liberados.")
 
+# ================ SERVIDOR WEB PARA RENDER ================
+# Esto es necesario para que Render detecte un puerto abierto y no falle la implementación
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write(b'Bot is running!')
+    
+    def log_message(self, format, *args):
+        # Suprimir logs del servidor HTTP
+        return
+
+def run_web_server():
+    port = int(os.environ.get("PORT", 10000))
+    server_address = ('', port)
+    httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
+    logger.info(f"Iniciando servidor web en puerto {port}")
+    httpd.serve_forever()
+
 if __name__ == "__main__":
+    # Iniciar servidor web en un hilo separado
+    if "PORT" in os.environ:  # Solo en Render
+        web_thread = threading.Thread(target=run_web_server, daemon=True)
+        web_thread.start()
+        logger.info("Servidor web iniciado en un hilo separado")
+    
+    # Iniciar el bot
     main()
