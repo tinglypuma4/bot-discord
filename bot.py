@@ -28,13 +28,13 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("bot.log"),
-        logging.StreamHandler()
+        logging.StreamHandler()  # Eliminado el FileHandler para evitar escribir en el sistema de archivos efímero
     ]
 )
 logger = logging.getLogger("DiscordBot")
 
 # ================ CARGA DE VARIABLES DE ENTORNO ================
+# Primero intentamos cargar desde .env para desarrollo local
 load_dotenv()
 
 # Tokens y claves API
@@ -509,27 +509,8 @@ COOLDOWN_TIME = 3  # segundos
 IMAGE_KEYWORDS = ["dibuja", "genera imagen", "crea imagen", "haz una imagen", "imagina", "dibujar", "crear imagen"]
 
 # ================ TASKS PERIÓDICAS ================
-@tasks.loop(hours=24)
-async def backup_database():
-    """Tarea que se ejecuta cada 24 horas para hacer backup de la base de datos"""
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_file = f"backup/bot_data_{timestamp}.db"
-    
-    # Asegurar que existe el directorio de backup
-    os.makedirs("backup", exist_ok=True)
-    
-    try:
-        # Crear una copia de la base de datos
-        conn = sqlite3.connect(db.db_path)
-        backup_conn = sqlite3.connect(backup_file)
-        conn.backup(backup_conn)
-        
-        backup_conn.close()
-        conn.close()
-        
-        logger.info(f"Backup de base de datos creado: {backup_file}")
-    except Exception as e:
-        logger.error(f"Error al crear backup de base de datos: {e}")
+# Nota: Se ha eliminado la tarea de backup_database, ya que no es útil en Render
+# debido al sistema de archivos efímero
 
 # ================ EVENTOS DEL BOT ================
 @bot.event
@@ -543,10 +524,6 @@ async def on_ready():
         channel_id = record["channel_id"]
         active_channels[guild_id] = channel_id
         logger.info(f"Canal activo cargado: Servidor {guild_id}, Canal {channel_id}")
-    
-    # Iniciar tareas periódicas
-    if not backup_database.is_running():
-        backup_database.start()
     
     # Sincronizar comandos
     try:
